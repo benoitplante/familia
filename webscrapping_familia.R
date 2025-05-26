@@ -5,7 +5,7 @@ library(stringr)
 library(tibble)
 library(jsonlite)
 
-# 🔍 Fonction d'extraction à partir des balises <input name="numeroNotice">
+# 🔍 Fonction d'extraction avec gestion des champs manquants
 extract_projects <- function(page_html) {
   page <- read_html(page_html)
   inputs <- page %>% html_elements("input[name='numeroNotice']")
@@ -14,7 +14,19 @@ extract_projects <- function(page_html) {
     html_attr("value") %>%
     lapply(fromJSON)
 
-  df <- bind_rows(json_list) %>%
+  df <- bind_rows(json_list)
+
+  # Ajout des colonnes manquantes si nécessaires
+  expected_cols <- c(
+    "Titre", "Auteurs", "date", "TypeDocument", "MotsCles",
+    "Thematiques", "Disciplines", "TypesDocs", "Sommaire",
+    "Notice", "T2", "VL", "IS", "SP", "URL"
+  )
+  for (col in expected_cols) {
+    if (!col %in% names(df)) df[[col]] <- NA
+  }
+
+  df <- df %>%
     transmute(
       titre = Titre,
       auteurs = Auteurs,
@@ -36,7 +48,7 @@ extract_projects <- function(page_html) {
   return(df)
 }
 
-# 🔁 Fonction de scraping multi-pages
+# 🔁 Fonction principale de scraping (toutes les pages)
 scrape_all_pages <- function(base_url) {
   b <- ChromoteSession$new()
   b$Page$navigate(base_url)
@@ -115,12 +127,13 @@ scrape_all_pages <- function(base_url) {
   return(final_data)
 }
 
-# ▶️ Lancer le scraping
+# ▶️ Lancer le scraping sur toutes les pages
 base_url <- "https://familia.ucs.inrs.ca/resultat-de-recherche/?discipline[]=438"
 raw_data <- scrape_all_pages(base_url)
 
-# 👁️ Aperçu brut
+# 👁️ Aperçu des premières lignes
 print(head(raw_data, 5), width = Inf)
 
-# 💾 (optionnel) Exporter les résultats
+# 💾 Export CSV complet
 write.csv(raw_data, "projets_familia_complet.csv", row.names = FALSE)
+
