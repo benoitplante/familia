@@ -135,5 +135,5 @@ raw_data <- scrape_all_pages(base_url)
 print(head(raw_data, 5), width = Inf)
 
 # 💾 Export CSV complet
-write.csv(raw_data, "projets_familia_complet.csv", row.names = FALSE)
+write.csv(raw_data, "df_projets_familia.csv", row.names = FALSE)
 
