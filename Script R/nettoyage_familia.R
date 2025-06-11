@@ -5,8 +5,10 @@ library(text)
 library(naniar)
 library(xml2)
 
+
+
 # Chargement des données exportées
-df <- read_csv("database/df_projets_familia.csv.csv")
+df <- read_csv("database/df_projets_familia.csv")
 
 # 3. Analyse des données manquantes
 missing_summary <- df %>%
@@ -49,14 +51,23 @@ df <- df %>%
            str_replace_all("[\"'’]", "") %>%
            str_squish())
 
-# 7. Nettoyage HTML dans les champs de sommaire
+# 7. Nettoyage des thématiques
+
+df <- df %>%
+  mutate(thematiques_clean = thematiques %>%
+           str_to_lower() %>%
+           str_replace_all("[\"'’]", "") %>%
+           str_replace("/+$", "") %>%    # <-- supprime les / finaux
+           str_squish())
+
+# 8. Nettoyage HTML dans les champs de sommaire
 df <- df %>%
   mutate(sommaire_clean = map_chr(sommaire, ~{
     if (is.na(.x) || .x == "") return(NA_character_)
     as.character(xml2::xml_text(xml2::read_html(paste0("<body>", .x, "</body>"))))
   }))
 
-# 8. Extraction des composantes méthodologiques et du résumé
+# 9. Extraction des composantes méthodologiques et du résumé
 
 df <- df %>%
   mutate(
@@ -71,6 +82,6 @@ df <- df %>%
 
 # 9. Sélection des colonnes pertinentes pour la suite
 df <- df %>%
-  select(titre_clean, auteurs, annee_extrait, type_doc_std, mots_cles, methode_instruments, methode_analyse)
+  select(titre_clean, auteurs, thematiques_clean, annee_extrait, type_doc_std, mots_cles, methode_instruments, methode_analyse)
 
 write.csv(df, "database/df_projets_familia_finale.csv", row.names = FALSE)
